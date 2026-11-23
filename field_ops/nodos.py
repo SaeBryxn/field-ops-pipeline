@@ -17,7 +17,7 @@ from typing import Dict, Optional, Tuple
 PREFIJO = "AY"
 SUFIJO = "A01"
 
-#: Código de nodo escrito de forma flexible: AY-0005-A01, AY0005A01, ay_0005_a01...
+#: Código de nodo escrito de forma flexible: AY-0901-A01, AY0901A01, ay_0903_a01...
 #: Sin ``\b`` porque ``_`` cuenta como letra y los nombres de archivo usan ``_`` de separador.
 NODE_RE = re.compile(r"(?<![A-Z0-9])([A-Z]{2})[-_ ]?(\d{4})[-_ ]?([A-Z]\d{2})(?![0-9])", re.IGNORECASE)
 
@@ -98,7 +98,7 @@ class CatalogoNodos:
 
 
 def codigo_desde_numero(num: str) -> str:
-    """``"5"`` -> ``"AY-0005-A01"``."""
+    """``"5"`` -> ``"AY-0901-A01"``."""
     return f"{PREFIJO}-{num.zfill(4)}-{SUFIJO}"
 
 
@@ -107,7 +107,7 @@ def normalize_node_input(
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Interpreta lo que escribe el operador y devuelve ``(numero, codigo, localidad)``.
 
-    Acepta ``"5"``, ``"0005"``, ``"AY-0005-A01"`` o texto con un número dentro.
+    Acepta ``"901"``, ``"0901"``, ``"AY-0901-A01"`` o texto con un número dentro.
     La localidad es ``None`` si el código no está en el catálogo.
     """
     if not s:

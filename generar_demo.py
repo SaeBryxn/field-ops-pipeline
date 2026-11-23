@@ -217,7 +217,7 @@ def _filas_diseno(utm_desfasado: Optional[tuple[float, float]] = None) -> list[d
         for k in range(ITEMS_POR_NODO):
             rin, rout, tipo_res = reservas[k]
             fila = {
-                "ID NODO": codigo, "ITEM": str(k + 1), "CÓDIGO DE ESTRUCTURA": f"E-{n + 1}{k + 1:02d}",
+                "ID NODO": codigo, "ITEM": k + 1, "CÓDIGO DE ESTRUCTURA": f"E-{n + 1}{k + 1:02d}",
                 "TIPO DE CABLE": "ADSS", "TIPO DE ELEMENTO": tipos[k], "TIPO DE RED ELECTRICA": redes[k],
                 "SPAN CONSTRUIDO": 100, "RESERVA  IN (m)": rin, "RESERVA OUT (m)": rout,
                 "Tipo de Reserva": tipo_res, "TIPO FIJACIÓN": "CB" if k == 1 else "AB",

@@ -166,7 +166,7 @@ def completar_cartera(
         nodo = catalogo.get(carpeta.codigo)
         valores = {
             "id_nodo": carpeta.codigo,
-            "item": carpeta.item,
+            "item": int(carpeta.item) if carpeta.item.isdigit() else carpeta.item,
             "nombre_nodo": nodo.localidad if nodo else carpeta.localidad,
             "departamento": nodo.departamento if nodo else None,
             "provincia": nodo.provincia if nodo else None,

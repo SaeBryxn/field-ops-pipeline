@@ -49,7 +49,7 @@ def test_catalogo_csv_punto_y_coma(tmp_path):
 
 
 def test_buscar_codigo():
-    assert buscar_codigo("foto_ay_0123_a01_x.jpg") == "AY-0123-A01"
+    assert buscar_codigo("foto_ay_0904_a01_x.jpg") == "AY-0904-A01"
     assert buscar_codigo("IMG_0001.jpg") is None
 
 
@@ -69,8 +69,8 @@ def test_normalize_item_input(entrada, esperado):
 
 
 @pytest.mark.parametrize("entrada, esperado", [
-    ("LARAMATE (@LARAMATE)", "LARAMATE"),
-    ("  SAN   PEDRO  ", "SAN PEDRO"),
+    ("VILLA EJEMPLO (@VILLA)", "VILLA EJEMPLO"),
+    ("  SAN   DEMO  ", "SAN DEMO"),
     ('A/B:C*D?"E"', "A-B-C-D--E-"),
     ("...", "SIN_NOMBRE"),
     ("", "SIN_NOMBRE"),

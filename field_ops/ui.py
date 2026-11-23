@@ -64,6 +64,7 @@ class FieldPhotoSorterApp:
         self._ediciones = 0          # cambia cuando el operador escribe (para no pisarlo con el OCR)
         self._sugerencia_actual = Sugerencia()
         self._cola: "queue.Queue[tuple[Path, Sugerencia, int]]" = queue.Queue()
+        self._resize_job: Optional[str] = None
 
         self._build_ui()
         self._bind_keys()
@@ -73,8 +74,13 @@ class FieldPhotoSorterApp:
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
-        self.root.geometry("1280x760")
-        self.root.minsize(1100, 680)
+        # escala por DPI (pantallas al 125-150 %): 1.0 = 96 dpi
+        self._esc = max(1.0, float(self.root.tk.call("tk", "scaling")) / (96 / 72))
+        sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+        self.root.geometry(f"{min(int(1280 * self._esc), sw - 60)}x{min(int(780 * self._esc), sh - 90)}")
+        self.root.minsize(min(int(1000 * self._esc), sw - 60), min(int(640 * self._esc), sh - 90))
+        ancho_panel = int(380 * self._esc)
+        wrap = ancho_panel - int(40 * self._esc)
 
         top = ttk.Frame(self.root, padding=8)
         top.pack(side=tk.TOP, fill=tk.X)
@@ -108,12 +114,13 @@ class FieldPhotoSorterApp:
 
         left = ttk.Frame(main)
         left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        pv = ttk.Frame(left)
+        pv = self._pv = ttk.Frame(left)
         pv.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.lbl_main = ttk.Label(pv, text="(sin imagen)", anchor="center")
         self.lbl_main.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 6))
         self.lbl_crop = ttk.Label(pv, text="(recorte inferior-derecha)", anchor="center")
         self.lbl_crop.pack(side=tk.LEFT, fill=tk.BOTH)
+        pv.bind("<Configure>", self._on_resize)
 
         cropbar = ttk.Frame(left)
         cropbar.pack(side=tk.TOP, fill=tk.X, pady=(8, 0))
@@ -124,13 +131,14 @@ class FieldPhotoSorterApp:
         self.lbl_crop_pct = ttk.Label(cropbar, text=f"{self.prefs.crop_pct}%")
         self.lbl_crop_pct.pack(side=tk.LEFT)
 
-        right = ttk.Frame(main, width=380)
-        right.pack(side=tk.RIGHT, fill=tk.Y, padx=(10, 0))
+        right = ttk.Frame(main, width=ancho_panel)
+        # before=left: el panel reserva su espacio primero y la imagen no lo empuja fuera
+        right.pack(side=tk.RIGHT, fill=tk.Y, padx=(10, 0), before=left)
         right.pack_propagate(False)
 
         box = ttk.Labelframe(right, text="Asignación", padding=10)
         box.pack(side=tk.TOP, fill=tk.X)
-        ttk.Label(box, textvariable=self.sugerencia_txt, foreground="#1F4E78", wraplength=340).grid(row=0, column=0, sticky="w", pady=(0, 6))
+        ttk.Label(box, textvariable=self.sugerencia_txt, foreground="#1F4E78", wraplength=wrap).grid(row=0, column=0, sticky="w", pady=(0, 6))
         ttk.Label(box, text="Número de nodo (XXXX)  [F2]:").grid(row=1, column=0, sticky="w")
         self.ent_num = ttk.Entry(box, textvariable=self.node_num)
         self.ent_num.grid(row=2, column=0, sticky="we", pady=(0, 8))
@@ -165,14 +173,14 @@ class FieldPhotoSorterApp:
 
         info = ttk.Labelframe(right, text="Info", padding=10)
         info.pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
-        self.lbl_file = ttk.Label(info, text="Archivo: -", wraplength=340, justify="left")
+        self.lbl_file = ttk.Label(info, text="Archivo: -", wraplength=wrap, justify="left")
         self.lbl_file.pack(anchor="w")
         self.lbl_prog = ttk.Label(info, text="Progreso: 0/0")
         self.lbl_prog.pack(anchor="w", pady=(6, 0))
         self.lbl_cat = ttk.Label(info, text=self._texto_catalogo())
         self.lbl_cat.pack(anchor="w", pady=(6, 0))
 
-        ttk.Label(right, textvariable=self.status, wraplength=360, justify="left").pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
+        ttk.Label(right, textvariable=self.status, wraplength=wrap, justify="left").pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
 
     def _bind_keys(self) -> None:
         self.root.bind("<Return>", lambda e: self.save_and_next())
@@ -262,20 +270,40 @@ class FieldPhotoSorterApp:
         try:
             im = open_image(path)
             self._im_cache = im
-            self._photo_main = ImageTk.PhotoImage(resize_to_fit(im, 820, 560))
-            self.lbl_main.config(image=self._photo_main, text="")
-            self._pintar_recorte()
+            self._pintar_preview()
         except Exception as e:  # noqa: BLE001
             self.lbl_main.config(image="", text="(error abriendo imagen)")
             self.lbl_crop.config(image="", text="(sin recorte)")
             self.status.set(f"Error: {e}")
+
+    def _area_preview(self) -> tuple[int, int]:
+        """Espacio disponible para las dos vistas (se adapta al tamaño de la ventana)."""
+        self._pv.update_idletasks()
+        w, h = self._pv.winfo_width(), self._pv.winfo_height()
+        if w < 50 or h < 50:  # aún no se dibuja la ventana
+            return 1200, 560
+        return w, h
+
+    def _pintar_preview(self) -> None:
+        if self._im_cache is None:
+            return
+        w, h = self._area_preview()
+        self._photo_main = ImageTk.PhotoImage(resize_to_fit(self._im_cache, int(w * 0.62), h))
+        self.lbl_main.config(image=self._photo_main, text="")
+        self._pintar_recorte()
+
+    def _on_resize(self, _evt=None) -> None:
+        if self._resize_job:
+            self.root.after_cancel(self._resize_job)
+        self._resize_job = self.root.after(150, self._pintar_preview)
 
     def _pintar_recorte(self) -> None:
         if self._im_cache is None:
             return
         pct = self._crop_pct()
         self.lbl_crop_pct.config(text=f"{pct}%")
-        crop = resize_to_fit(crop_bottom_right(self._im_cache, pct), 380, 560)
+        w, h = self._area_preview()
+        crop = resize_to_fit(crop_bottom_right(self._im_cache, pct), int(w * 0.36), h)
         self._photo_crop = ImageTk.PhotoImage(crop)
         self.lbl_crop.config(image=self._photo_crop, text="")
 
@@ -555,6 +583,13 @@ def _abrir(path: Path) -> None:
 
 
 def run() -> None:
+    if os.name == "nt":  # nitidez en pantallas con escala 125-150 %
+        try:
+            import ctypes
+
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:  # noqa: BLE001
+            pass
     root = tk.Tk()
     try:
         style = ttk.Style()
