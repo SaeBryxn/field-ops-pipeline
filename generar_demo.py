@@ -161,7 +161,18 @@ def _desplazar(lat: float, lon: float, metros: float, rumbo_grados: float) -> tu
     return lat + math.degrees(dlat), lon + math.degrees(dlon)
 
 
-def generar_fotos(destino: Path) -> list[Path]:
+def _localidades() -> dict[str, str]:
+    from field_ops.nodos import CatalogoNodos
+
+    cat = CatalogoNodos.desde_csv(RAIZ / "config" / "nodos.example.csv")
+    return {c: n.localidad for c, n in cat.nodos.items()}
+
+
+def generar_fotos(destino: Path, ya_ordenado: bool = False) -> list[Path]:
+    """Crea las fotos en ``destino``. Con ``ya_ordenado`` las deja en ``NODO/ITEM-x`` (como tras el paso 1)."""
+    from field_ops.rutas import build_dest_folder
+
+    locs = _localidades() if ya_ordenado else {}
     rnd = random.Random(42)
     fotos: list[Path] = []
     contador = 1
@@ -182,32 +193,52 @@ def generar_fotos(destino: Path) -> list[Path]:
                 sin_gps = codigo == "AY-0904-A01" and item == 3  # fuerza una fila "REVISAR"
                 jlat = None if sin_gps else lat + rnd.uniform(-2e-5, 2e-5)
                 jlon = None if sin_gps else lon + rnd.uniform(-2e-5, 2e-5)
+                carpeta = build_dest_folder(destino, codigo, locs[codigo], str(item)) if ya_ordenado else destino
                 fotos.append(crear_foto(
-                    destino / nombre, codigo, str(item), jlat, jlon, round(alt, 1),
+                    carpeta / nombre, codigo, str(item), jlat, jlon, round(alt, 1),
                     fecha=fecha, semilla=contador,
                 ))
                 contador += 1
     return fotos
 
 
-def crear_plantilla_cartera(path: Path) -> Path:
-    """Cartera Excel de ejemplo: hoja "Cartera", tabla "Tareas", listas desplegables y 2 filas manuales."""
+def _filas_diseno(utm_desfasado: Optional[tuple[float, float]] = None) -> list[dict]:
+    """Filas "de diseño" que ya existían antes de ir a campo (sin coordenadas).
+
+    Nodos 0901-0903 vienen del diseño; 0904 y 0905 no, así que la automatización
+    crea esas filas y las manda a revisión. Una fila trae un UTM mal digitado para
+    mostrar la alerta de discrepancia con el GPS de las fotos.
+    """
+    tipos = ["PE", "PE", "CA", "PE"]
+    redes = ["BT", "MT", "-", "BT"]
+    reservas = [(0, 0, "-"), (15, 15, "RE"), (0, 0, "-"), (10, 10, "RT")]
+    filas = []
+    for n, codigo in enumerate(["AY-0901-A01", "AY-0902-A01", "AY-0903-A01"]):
+        for k in range(ITEMS_POR_NODO):
+            rin, rout, tipo_res = reservas[k]
+            fila = {
+                "ID NODO": codigo, "ITEM": str(k + 1), "CÓDIGO DE ESTRUCTURA": f"E-{n + 1}{k + 1:02d}",
+                "TIPO DE CABLE": "ADSS", "TIPO DE ELEMENTO": tipos[k], "TIPO DE RED ELECTRICA": redes[k],
+                "SPAN CONSTRUIDO": 100, "RESERVA  IN (m)": rin, "RESERVA OUT (m)": rout,
+                "Tipo de Reserva": tipo_res, "TIPO FIJACIÓN": "CB" if k == 1 else "AB",
+                "BRAZOS EXTENSORES": 1 if k == 1 else 0, "Caja Terminal Óptica": 0, "TIPO DE EMPALME": "-",
+            }
+            if utm_desfasado and codigo == "AY-0903-A01" and k == 1:
+                fila["X UTM"], fila["Y UTM "] = utm_desfasado
+            filas.append(fila)
+    return filas
+
+
+def crear_plantilla_cartera(path: Path, utm_desfasado: Optional[tuple[float, float]] = None) -> Path:
+    """Cartera Excel de ejemplo: hoja "Cartera", tabla "Tareas", listas desplegables y filas de diseño."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Cartera"
     ws.append(CABECERAS_PLANTILLA)
     col = {h.split("\n")[0].strip(): i + 1 for i, h in enumerate(CABECERAS_PLANTILLA)}
+    col["Y UTM "] = col["Y UTM"]
 
-    filas_manuales = [
-        {"ID NODO": "AY-0901-A01", "ITEM": "1", "CÓDIGO DE ESTRUCTURA": "E-001", "TIPO DE CABLE": "ADSS",
-         "TIPO DE ELEMENTO": "PE", "TIPO DE RED ELECTRICA": "BT", "SPAN CONSTRUIDO": 100,
-         "RESERVA  IN (m)": 0, "RESERVA OUT (m)": 0, "Tipo de Reserva": "-", "TIPO FIJACIÓN": "AB",
-         "BRAZOS EXTENSORES": 0, "Caja Terminal Óptica": 0, "TIPO DE EMPALME": "-"},
-        {"ID NODO": "AY-0901-A01", "ITEM": "2", "CÓDIGO DE ESTRUCTURA": "E-002", "TIPO DE CABLE": "ADSS",
-         "TIPO DE ELEMENTO": "PE", "TIPO DE RED ELECTRICA": "MT", "SPAN CONSTRUIDO": 100,
-         "RESERVA  IN (m)": 15, "RESERVA OUT (m)": 15, "Tipo de Reserva": "RE", "TIPO FIJACIÓN": "CB",
-         "BRAZOS EXTENSORES": 1, "Caja Terminal Óptica": 0, "TIPO DE EMPALME": "-"},
-    ]
+    filas_manuales = _filas_diseno(utm_desfasado)
     for r, datos in enumerate(filas_manuales, start=2):
         for k, v in datos.items():
             ws.cell(row=r, column=col[k], value=v)
@@ -249,14 +280,26 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--destino", type=Path, default=RAIZ / "demo")
     ap.add_argument("--limpiar", action="store_true", help="borra la carpeta demo antes de generar")
+    ap.add_argument("--ya-ordenado", action="store_true",
+                    help="deja las fotos ya ordenadas en salida/ (para probar directo los pasos 3 y 4)")
     args = ap.parse_args()
 
     if args.limpiar and args.destino.exists():
         shutil.rmtree(args.destino)
-    fotos = generar_fotos(args.destino / "fuente")
-    (args.destino / "salida").mkdir(parents=True, exist_ok=True)
-    plantilla = crear_plantilla_cartera(args.destino / "plantilla_cartera.xlsx")
-    print(f"OK: {len(fotos)} fotos en {args.destino / 'fuente'}")
+    if args.ya_ordenado:
+        fotos = generar_fotos(args.destino / "salida", ya_ordenado=True)
+    else:
+        fotos = generar_fotos(args.destino / "fuente")
+        (args.destino / "salida").mkdir(parents=True, exist_ok=True)
+    # UTM "mal digitado": 180 m al este del GPS real de AY-0903-A01 ITEM 2
+    from field_ops.imagen import leer_datos_foto
+    from field_ops.utm import latlon_a_utm
+
+    ref = next(args.destino.rglob("AY-0903-A01_ITEM-2_001.jpg"))
+    d = leer_datos_foto(ref)
+    e, n, _, _ = latlon_a_utm(d.lat, d.lon)
+    plantilla = crear_plantilla_cartera(args.destino / "plantilla_cartera.xlsx", (round(e + 180, 2), round(n, 2)))
+    print(f"OK: {len(fotos)} fotos en {fotos[0].parent if not args.ya_ordenado else args.destino / 'salida'}")
     print(f"OK: plantilla {plantilla}")
     print(f"Siguiente: python main.py   (fuente={args.destino / 'fuente'}, salida={args.destino / 'salida'})")
 
