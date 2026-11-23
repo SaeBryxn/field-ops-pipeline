@@ -102,14 +102,20 @@ def ocr_disponible() -> bool:
 
 
 def preprocesar(im: Image.Image) -> Image.Image:
-    """Escala de grises, contraste, ampliación y binarizado para mejorar el OCR."""
+    """Escala de grises, ampliación, contraste y nitidez para mejorar el OCR."""
     g = ImageOps.grayscale(im)
     if g.width < 900:
         f = 900 / max(1, g.width)
         g = g.resize((int(g.width * f), int(g.height * f)), Image.LANCZOS)
     g = ImageOps.autocontrast(g, cutoff=2)
-    g = g.filter(ImageFilter.SHARPEN)
-    return g.point(lambda p: 255 if p > 140 else 0)
+    return g.filter(ImageFilter.SHARPEN)
+
+
+def variantes(im: Image.Image) -> list[Image.Image]:
+    """Versiones a probar en orden: gris (Tesseract binariza con Otsu), umbral fijo e invertida."""
+    g = preprocesar(im)
+    umbral = g.point(lambda p: 255 if p > 160 else 0)
+    return [g, umbral, ImageOps.invert(umbral)]
 
 
 def leer_rotulo(recorte: Image.Image) -> str:
@@ -118,15 +124,18 @@ def leer_rotulo(recorte: Image.Image) -> str:
         return ""
     import pytesseract
 
-    proc = preprocesar(recorte)
     textos = []
-    for variante in (proc, ImageOps.invert(proc)):  # rótulo claro u oscuro
-        try:
-            textos.append(pytesseract.image_to_string(variante, config="--psm 6"))
-        except Exception:
-            continue
-        if parsear_texto_rotulo(textos[-1]).nodo_num:
-            break
+    # bloque de texto (psm 6) y texto disperso (psm 11); se detiene al encontrar nodo + ITEM
+    for variante in variantes(recorte):
+        for psm in (6, 11):
+            try:
+                texto = pytesseract.image_to_string(variante, config=f"--psm {psm}")
+            except Exception:  # noqa: BLE001 - una variante fallida no detiene las demás
+                continue
+            s = parsear_texto_rotulo(texto)
+            if s.nodo_num and s.item:
+                return texto
+            textos.append(texto)
     return "\n".join(textos)
 
 
