@@ -31,6 +31,10 @@ def test_sugerir_desde_nombre_vacio():
     ("NODO AY-0904-A01\nITEM 5", "0904", "5"),
     ("AY - O9O4 - AO1\nITEM: 7_8", "0904", "7_8"),  # confusiones típicas de OCR
     ("AY-09S1-A01", "0951", None),
+    ("NODO AY-0903-A01\n|TEM 4", "0903", "4"),
+    ("NODO AY-0903-A01\n1TEM: 12_B", "0903", "12_B"),
+    ("NODO AY-0903-A01\nTEM 7", "0903", "7"),
+    ("SISTEMA 5", None, None),  # "TEM" dentro de otra palabra no cuenta
     ("texto sin nada", None, None),
 ])
 def test_parsear_texto_rotulo(texto, nodo, item):
@@ -51,8 +55,8 @@ def test_ocr_real_sobre_foto_demo(tmp_path):
     from field_ops.imagen import open_image
 
     s = sugerir(p, crop_bottom_right(open_image(p), 40))
-    assert s.fuente == "ocr"
-    assert (s.nodo_num, s.item) == ("0903", "4")
+    assert s.fuente == "ocr", s.texto
+    assert (s.nodo_num, s.item) == ("0903", "4"), f"texto OCR: {s.texto!r}"
 
 
 # ----------------------------------------------------------------- imagen

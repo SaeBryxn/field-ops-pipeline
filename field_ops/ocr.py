@@ -26,6 +26,10 @@ from .rutas import normalize_item_input
 _NODO_OCR_RE = re.compile(r"A\s*Y\s*[-_—.\s]?\s*([0-9OIlSB]{4})\s*[-_—.\s]?\s*A\s*[0O]\s*[1Il]", re.IGNORECASE)
 _NODO_NOMBRE_RE = re.compile(r"AY[-_ ]?(\d{3,4})(?:[-_ ]?A01)?", re.IGNORECASE)
 _ITEM_RE = re.compile(r"ITEM\s*[-_:#.]?\s*([0-9A-Z]+(?:[_-][0-9A-Z]+)*)", re.IGNORECASE)
+#: En OCR la "I" de ITEM suele salir como 1, l, |, ! o desaparecer; y "TEM" con espacios.
+_ITEM_OCR_RE = re.compile(
+    r"(?<![A-Z0-9])[I1l|!\[]?\s*T\s*E\s*M\s*[-_:#.]?\s*([0-9A-Z]+(?:[_-][0-9A-Z]+)*)", re.IGNORECASE
+)
 
 _OCR_DIGITOS = str.maketrans({"O": "0", "o": "0", "I": "1", "l": "1", "S": "5", "B": "8"})
 
@@ -72,7 +76,7 @@ def parsear_texto_rotulo(texto: str) -> Sugerencia:
         if dig.isdigit():
             num = dig.zfill(4)
     item = None
-    mi = _ITEM_RE.search(texto)
+    mi = _ITEM_RE.search(texto) or _ITEM_OCR_RE.search(texto)
     if mi:
         item = normalize_item_input(mi.group(1))
     if not (num or item):
