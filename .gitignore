@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Datos reales / confidenciales (NUNCA se publican)
+config/nodos.csv
+.env
+*.log
+salida/
+entrega/
+ENTREGA_*/
+fotos/
+datos_reales/
+
+# Demo generada (se crea con generar_demo.py)
+demo/
+
+# Excel/Zip reales fuera de la carpeta docs
+*.xlsx
+*.zip
+!docs/**/*.xlsx
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,170 @@
+app:
+  sheet_name: Cartera
+  table_name: Tareas
+calculated_headers:
+- DISTANCIA ENTRE ELEMENTOS
+- FLECHA
+- ABSCISA INICIAL
+- ABSCISA FINAL
+- VANO DE FIBRA OPTICA
+- CABLE
+- ETIQUETAS
+- Longitud Reserva
+- CINTA ACERADA
+- HEBILLAS
+- CABLE MENSAJERO
+- VANO FLOJO
+- RED ELECTRICA
+numeric_headers:
+- X UTM
+- Y UTM
+- ALTITUD
+- RESERVA  IN
+- RESERVA OUT
+- BRAZOS EXTENSORES
+- Caja Terminal Óptica
+combos:
+  TIPO DE ELEMENTO:
+  - ND
+  - EC
+  - PE
+  - PN
+  - PA
+  - CA
+  - IAO
+  - HS
+  - '-'
+  TIPO DE RED ELECTRICA:
+  - AT
+  - MT
+  - BT
+  - PN
+  - PP
+  - '-'
+  Tipo de Reserva:
+  - RE
+  - RD
+  - RM
+  - RT
+  - RP
+  - '-'
+  TIPO DE ABRAZADERA:
+  - 4 CUERPOS
+  - 3 CUERPOS
+  - 2 CUERPOS
+  - '-'
+  TIPO FIJACIÓN:
+  - CB
+  - AB
+  - AT
+  - '-'
+modes:
+  Mínimo:
+  - ID NODO
+  - ITEM
+  - CÓDIGO DE ESTRUCTURA
+  - TIPO DE ELEMENTO
+  - TIPO DE RED ELECTRICA
+  - X UTM
+  - Y UTM
+  - ALTITUD
+  - SPAN CONSTRUIDO
+  - RESERVA  IN
+  - RESERVA OUT
+  - Tipo de Reserva
+  Estructura + Ubicación:
+  - ID NODO
+  - ITEM
+  - CÓDIGO DE ESTRUCTURA
+  - TIPO DE ELEMENTO
+  - TIPO DE POSTE
+  - TIPO DE RED ELECTRICA
+  - MATERIAL DEL APOYO
+  - PROPIETARIO DE ESTRUCTURA
+  - X UTM
+  - Y UTM
+  - ALTITUD
+  - LATITUD
+  - LONGITUD
+  - SPAN CONSTRUIDO
+  - RESERVA  IN
+  - RESERVA OUT
+  - Tipo de Reserva
+  Completo:
+  - RED
+  - REGION
+  - ID NODO
+  - NOMBRE DE NODO
+  - DEPARTAMENTO
+  - PROVINCIA
+  - DISTRITO
+  - DIRECCIÓN
+  - ITEM
+  - CÓDIGO DE ESTRUCTURA
+  - TIPO DE ELEMENTO
+  - TIPO DE POSTE
+  - TIPO DE RED ELECTRICA
+  - MATERIAL DEL APOYO
+  - RESISTENCIA
+  - PROPIETARIO
+  - COSTADO
+  - X UTM
+  - Y UTM
+  - ALTITUD
+  - LATITUD
+  - LONGITUD
+  - ACCESO
+  - EXISTE CÁMARA
+  - SPAN CONSTRUIDO
+  - RESERVA  IN
+  - RESERVA OUT
+  - Tipo de Reserva
+  - TIPO FIJACIÓN
+  - TIPO DE ABRAZADERA
+  - BRAZOS EXTENSORES
+  - Caja Terminal Óptica
+  - TIPO DE EMPALME
+templates_by_u:
+  PE:
+    TIPO DE ELEMENTO: PE
+    SPAN CONSTRUIDO: 100
+    RESERVA  IN: 0
+    RESERVA OUT: 0
+    Tipo de Reserva: '-'
+  PA:
+    TIPO DE ELEMENTO: PA
+    SPAN CONSTRUIDO: 100
+    RESERVA  IN: 0
+    RESERVA OUT: 0
+    Tipo de Reserva: '-'
+  CA:
+    TIPO DE ELEMENTO: CA
+    SPAN CONSTRUIDO: 100
+    RESERVA  IN: 0
+    RESERVA OUT: 0
+    Tipo de Reserva: '-'
+# Columnas que la automatización llena desde las fotos ordenadas.
+# clave = prefijo de la cabecera en la plantilla Excel.
+columnas_auto:
+  id_nodo: ID NODO
+  nombre_nodo: NOMBRE DE NODO
+  departamento: DEPARTAMENTO
+  provincia: PROVINCIA
+  distrito: DISTRITO
+  item: ITEM
+  x_utm: X UTM
+  y_utm: Y UTM
+  altitud: ALTITUD
+  latitud: LATITUD
+  longitud: LONGITUD
+  n_fotos: N° FOTOS
+  carpeta_fotos: CARPETA FOTOS
+  fecha_foto: FECHA FOTO
+# Columnas que un humano debe completar; si quedan vacías la fila sale en "REVISAR".
+obligatorias:
+- ID NODO
+- ITEM
+- TIPO DE ELEMENTO
+- X UTM
+- Y UTM
+- ALTITUD
