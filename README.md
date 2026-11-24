@@ -30,8 +30,9 @@ Después de cada campaña de mantenimiento llegaban miles de fotos con nombres d
 3. Recalcular distancias entre postes, abscisas, vanos, metros de cable y reservas.
 4. Revisar inconsistencias, armar las carpetas y subirlas a Drive.
 
-Para un lote completo eso era del orden de **[X] semanas de trabajo manual**, con errores
-de tipeo y fotos en la carpeta equivocada que se descubrían tarde.
+Para un lote completo eso era **alrededor de un mes de trabajo manual** (con amanecidas), con
+errores de tipeo y fotos en la carpeta equivocada que se descubrían tarde. Con la primera
+versión de esta herramienta, que hice por iniciativa propia, **pasó a entre 3 días y una semana**.
 
 ## La solución
 
@@ -154,7 +155,7 @@ field_ops/
 
 Decisiones de diseño:
 
-- **Funciones puras separadas de la interfaz**, para poder testearlas (66 tests con `pytest`,
+- **Funciones puras separadas de la interfaz**, para poder testearlas (70 tests con `pytest`,
   incluido un test de OCR real que corre en CI con Tesseract).
 - **Configuración fuera del código**: catálogo de nodos en CSV, columnas de la cartera en
   `config/cartera_schema.yml`, variables en `.env` (ver `.env.example`).
