@@ -174,12 +174,10 @@ pytest
 
 | | Antes (manual) | Con la herramienta |
 |---|---|---|
-| Ordenar fotos de un lote | [X] | [X] |
-| Completar la cartera | [X] | [X] + revisión |
-| Errores detectados antes de entregar | [X] | [X] |
-| Personal necesario | [X] | [X] |
+| Entrega de un lote completo (ordenar fotos + cartera) | ~1 mes, con amanecidas | 3 días a 1 semana |
 
-> Completa con tus cifras reales: tiempo por lote, fotos por hora y errores encontrados en revisión.
+Cifra de la primera versión que usé en mi propio trabajo; la revisión humana de las filas
+marcadas sigue siendo parte del proceso.
 
 ## Licencia
 
